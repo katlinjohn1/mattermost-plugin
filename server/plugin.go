@@ -17,6 +17,15 @@ import (
 	root "github.com/mattermost/mattermost-plugin-demo"
 )
 
+// This is what the root declaration is bringing in (I think)
+// var manifestString string
+
+// var Manifest model.Manifest
+
+// func init() {
+// 	_ = json.NewDecoder(strings.NewReader(manifestString)).Decode(&Manifest)
+// }
+
 // change this reference to local manifest?
 var (
 	manifest model.Manifest = root.Manifest
