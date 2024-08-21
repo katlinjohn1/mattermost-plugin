@@ -1,6 +1,6 @@
 {
     "id": "com.mattermost.server-hello-world",
-    "name": "Hello World",
+    "name": "Modal",
     "server": {
         "executable": "plugin.exe"
     }
