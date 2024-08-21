@@ -12,7 +12,6 @@ import (
 	"github.com/mattermost/mattermost/server/public/model"
 	"github.com/mattermost/mattermost/server/public/pluginapi"
 	"github.com/mattermost/mattermost/server/public/pluginapi/cluster"
-	"github.com/katlinjohn1/mattermost-plugin/utils"
 	
 
 	root "github.com/mattermost/mattermost-plugin-demo"
@@ -109,6 +108,15 @@ type configuration struct {
 	// demoChannelIDs maps team ids to the channels created for each using the channel name above.
 	demoChannelIDs map[string]string
 }
+
+func PrettyJSON(in interface{}) (string, error) {
+	bb, err := json.MarshalIndent(in, "", "  ")
+	if err != nil {
+		return "", err
+	}
+	return string(bb), nil
+}
+
 
 // Clone deep copies the configuration. Your implementation may only require a shallow copy if
 // your configuration has no reference types.
