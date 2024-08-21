@@ -1,0 +1,7 @@
+{
+    "id": "com.mattermost.server-hello-world",
+    "name": "Hello World",
+    "server": {
+        "executable": "plugin.exe"
+    }
+}
