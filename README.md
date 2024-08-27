@@ -1,5 +1,14 @@
 # mattermost-plugin
 
+## To build the plugin as of 8/27/24:
+
+```
+go build -o plugin.exe plugin.go
+# or if you are on mac, run this instead
+GOOS=linux GOARCH=amd64 go build -o plugin.exe plugin.go
+tar -czvf plugin.tar.gz plugin.exe plugin.json 
+```
+
 ## To deploy Mattermost on Docker:
 
 In a terminal window, clone the repository and enter the directory.
