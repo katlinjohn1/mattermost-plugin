@@ -1,4 +1,4 @@
-module plugin-test
+module github.com/katlinjohn1/mattermost-plugin
 
 go 1.22.5
 
