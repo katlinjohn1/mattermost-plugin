@@ -1,15 +1,16 @@
 package main
 
 import (
-	"sync"
-	"fmt"
-	"net/http"
-	"time"
 	"encoding/json"
+	"fmt"
+	"log"
+	"net/http"
 	"strings"
+	"sync"
+	"time"
 
-	"github.com/pkg/errors"
 	"github.com/gorilla/mux"
+	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost/server/public/model"
 	"github.com/mattermost/mattermost/server/public/plugin"
@@ -63,7 +64,7 @@ func (p *Plugin) initializeAPI() {
 
 	dialogRouter := router.PathPrefix("/dialog").Subrouter()
 	dialogRouter.Use(p.withDelay)
-	dialogRouter.HandleFunc("/1", p.handleDialog1)
+	dialogRouter.HandleFunc("/submit-dialog", p.handleDialog)
 	dialogRouter.HandleFunc("/error", p.handleDialogWithError)
 
 	p.router = router
@@ -80,8 +81,34 @@ func (p *Plugin) withDelay(next http.Handler) http.Handler {
 	})
 }
 
-func (p *Plugin) handleDialog1(w http.ResponseWriter, r *http.Request) {
+func (p *Plugin) handleDialog(w http.ResponseWriter, r *http.Request) {
+
+	log.Println("handling the dialog")
+	configuration := p.getConfiguration()
+
+	teams, err2 := p.API.GetTeams()
+	if err2 != nil {
+		errors.Wrap(err2, "failed to query teams OnActivate")
+	}
+
+	for _, team := range teams {
+		_, ok := configuration.demoChannelIDs[team.Id]
+		if !ok {
+			p.API.LogWarn("No demo channel id for team", "team", team.Id)
+			continue
+		}
+
+		msg := fmt.Sprintf("OnActivate: %s", manifest.Id)
+		if err := p.postPluginMessage(team.Id, msg); err != nil {
+			errors.Wrap(err, "failed to post OnActivate message")
+		}
+	}
+
 	var request model.SubmitDialogRequest
+
+	if request.Cancelled {
+		return
+	}
 	err := json.NewDecoder(r.Body).Decode(&request)
 	if err != nil {
 		p.API.LogError("Failed to decode SubmitDialogRequest", "err", err)
@@ -91,25 +118,6 @@ func (p *Plugin) handleDialog1(w http.ResponseWriter, r *http.Request) {
 	
 	defer r.Body.Close()
 
-	if !request.Cancelled {
-		number, ok := request.Submission[dialogElementNameNumber].(float64)
-		if !ok {
-			p.API.LogError("Request is missing field", "field", dialogElementNameNumber)
-			w.WriteHeader(http.StatusOK)
-			return
-		}
-
-		if number != 42 {
-			response := &model.SubmitDialogResponse{
-				Errors: map[string]string{
-					dialogElementNameNumber: "This must be 42",
-				},
-			}
-			p.writeJSON(w, response)
-			return
-		}
-	}
-
 	user, appErr := p.API.GetUser(request.UserId)
 	if appErr != nil {
 		p.API.LogError("Failed to get user for dialog", "err", appErr.Error())
@@ -117,30 +125,34 @@ func (p *Plugin) handleDialog1(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	msg := "@%v submitted an Interative Dialog"
-	if request.Cancelled {
-		msg = "@%v canceled an Interative Dialog"
+	msg := "@%v submitted a ticket\n```json\n%v\n```"
+
+	requestJSON, jsonErr := json.MarshalIndent(request, "", "  ")
+	if jsonErr != nil {
+		p.API.LogError("Failed to marshal json for interactive action", "err", jsonErr.Error())
+		w.WriteHeader(http.StatusInternalServerError)
+		return
 	}
 
 	rootPost, appErr := p.API.CreatePost(&model.Post{
 		UserId:    p.botID,
 		ChannelId: request.ChannelId,
-		Message:   fmt.Sprintf(msg, user.Username),
+		Message:   fmt.Sprintf(msg, user.Username, string(requestJSON)),
 	})
 	if appErr != nil {
 		p.API.LogError("Failed to post handleDialog1 message", "err", appErr.Error())
 		return
 	}
 
+	msg = "cc: @%v"
 	if !request.Cancelled {
-		// Don't post the email address publicly
-		request.Submission[dialogElementNameEmail] = "xxxxxxxxxxx"
 
 		if _, appErr = p.API.CreatePost(&model.Post{
 			UserId:    p.botID,
 			ChannelId: request.ChannelId,
 			RootId:    rootPost.Id,
-			Message:   "Data:",
+			//set user to incident responders group
+			Message:   fmt.Sprintf(msg, user.Username),
 			Type:      "custom_demo_plugin",
 			Props:     request.Submission,
 		}); appErr != nil {
@@ -292,10 +304,6 @@ const (
 	dialogStateSome                = "somestate"
 	dialogStateRelativeCallbackURL = "relativecallbackstate"
 	dialogIntroductionText         = "To request help from the Control Plane or Platform Factory team, please fill out the form"
-
-	dialogElementNameNumber = "somenumber"
-	dialogElementNameEmail  = "someemail"
-
 )
 
 func (p *Plugin) registerCommands() error {
@@ -497,7 +505,7 @@ func (p *Plugin) executeCommandHooks(args *model.CommandArgs) *model.CommandResp
 }
 
 func (p *Plugin) executeCommandDialog(args *model.CommandArgs) *model.CommandResponse {
-	serverConfig := p.API.GetConfig()
+	// serverConfig := p.API.GetConfig()
 
 	var dialogRequest model.OpenDialogRequest
 	fields := strings.Fields(args.Command)
@@ -510,9 +518,11 @@ func (p *Plugin) executeCommandDialog(args *model.CommandArgs) *model.CommandRes
 	case "":
 		dialogRequest = model.OpenDialogRequest{
 			TriggerId: args.TriggerId,
-			URL:       fmt.Sprintf("%s/plugins/%s/dialog/1", *serverConfig.ServiceSettings.SiteURL, manifest.Id),
+			// URL:       fmt.Sprintf("%s/plugins/%s/dialog/submit-dialog", *serverConfig.ServiceSettings.SiteURL , manifest.Id),
+			URL:       fmt.Sprintf("%s/plugins/%s/dialog/submit-dialog", "http://127.0.0.1:8065", manifest.Id),
 			Dialog:    getDialogWithSampleElements(),
 		}
+		
 	default:
 		return &model.CommandResponse{
 			ResponseType: model.CommandResponseTypeEphemeral,
@@ -683,8 +693,6 @@ func (c *configuration) Clone() *configuration {
 		ChannelName:             c.ChannelName,
 		LastName:                c.LastName,
 		TextStyle:               c.TextStyle,
-		RandomSecret:            c.RandomSecret,
-		SecretMessage:           c.SecretMessage,
 		EnableMentionUser:       c.EnableMentionUser,
 		MentionUser:             c.MentionUser,
 		SecretNumber:            c.SecretNumber,
@@ -742,23 +750,11 @@ func (p *Plugin) diffConfiguration(newConfiguration *configuration) {
 	if newConfiguration.LastName != oldConfiguration.LastName {
 		configurationDiff["lastname"] = newConfiguration.LastName
 	}
-	if newConfiguration.TextStyle != oldConfiguration.TextStyle {
-		configurationDiff["text_style"] = newConfiguration.ChannelName
-	}
-	if newConfiguration.RandomSecret != oldConfiguration.RandomSecret {
-		configurationDiff["random_secret"] = "<HIDDEN>"
-	}
-	if newConfiguration.SecretMessage != oldConfiguration.SecretMessage {
-		configurationDiff["secret_message"] = newConfiguration.SecretMessage
-	}
 	if newConfiguration.EnableMentionUser != oldConfiguration.EnableMentionUser {
 		configurationDiff["enable_mention_user"] = newConfiguration.EnableMentionUser
 	}
 	if newConfiguration.MentionUser != oldConfiguration.MentionUser {
 		configurationDiff["mention_user"] = newConfiguration.MentionUser
-	}
-	if newConfiguration.SecretNumber != oldConfiguration.SecretNumber {
-		configurationDiff["secret_number"] = newConfiguration.SecretNumber
 	}
 
 	if len(configurationDiff) == 0 {
@@ -827,8 +823,8 @@ func (p *Plugin) OnConfigurationChange() error {
 	configuration.demoUserID = demoUserID
 
 	botID, ensureBotError := p.client.Bot.EnsureBot(&model.Bot{
-		Username:    "demoplugin",
-		DisplayName: "Demo Plugin Bot",
+		Username:    "duplugin",
+		DisplayName: "DU Bot",
 		Description: "A bot account created by the demo plugin.",
 	}, pluginapi.ProfileImagePath(""))
 	if ensureBotError != nil {
