@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"time"
 
@@ -91,27 +92,41 @@ func (p *Plugin) handleDialog(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	msg := "@%v submitted a ticket\n```json\n%v\n```"
+	msg := "@%v submitted a ticket\n"
 
-	requestJSON, jsonErr := json.MarshalIndent(request, "", "  ")
-	if jsonErr != nil {
-		p.API.LogError("Failed to marshal json for interactive action", "err", jsonErr.Error())
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
+	// requestJSON, jsonErr := json.MarshalIndent(request, "", "  ")
+	// if jsonErr != nil {
+	// 	p.API.LogError("Failed to marshal json for interactive action", "err", jsonErr.Error())
+	// 	w.WriteHeader(http.StatusInternalServerError)
+	// 	return
+	// }
+	shortDescription := request.Submission["shortDescription"].(string)
 
 	rootPost, appErr := p.API.CreatePost(&model.Post{
 		UserId:    p.botID,
 		ChannelId: request.ChannelId,
-		Message:   fmt.Sprintf(msg, user.Username, string(requestJSON)),
+		Message:   fmt.Sprintf(msg, user.Username),
+		Type: "custom_demo_plugin",
+		Props: model.StringInterface{
+			"attachments": []*model.SlackAttachment{{
+				Fallback: "test",
+				Color: "#FF8000",
+				Pretext: "this is pretext",
+				AuthorName: user.Username,
+				Fields: []*model.SlackAttachmentField {
+					shortDescription,
+				},
+			}},
+		},
 	})
 	if appErr != nil {
-		p.API.LogError("Failed to post handleDialog1 message", "err", appErr.Error())
+		p.API.LogError("Failed to post handleDialog message", "err", appErr.Error())
 		return
 	}
 
 	msg = "cc: @%v"
 	if !request.Cancelled {
+		log.Print(request.Submission)
 
 		if _, appErr = p.API.CreatePost(&model.Post{
 			UserId:    p.botID,
@@ -119,11 +134,10 @@ func (p *Plugin) handleDialog(w http.ResponseWriter, r *http.Request) {
 			RootId:    rootPost.Id,
 			//set user to incident responders group
 			Message:   fmt.Sprintf(msg, user.Username),
-			// Type:      "custom_demo_plugin",
-			Type: model.PostActionTypeSelect,
-			Props:     request.Submission,
+			Type:      "custom_demo_plugin",
+			
 		}); appErr != nil {
-			p.API.LogError("Failed to post handleDialog1 message", "err", appErr.Error())
+			p.API.LogError("Failed to post handleDialog message", "err", appErr.Error())
 			return
 		}
 	}
