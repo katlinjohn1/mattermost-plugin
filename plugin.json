@@ -1,7 +1,46 @@
 {
-    "id": "com.mattermost.server-hello-world",
-    "name": "Hello World",
+    "id": "com.mattermost.plugin-help-form",
+    "name": "Request Form",
+    "description": "This plugin uses a /slash command to open a form to request help.",
+    "homepage_url": "https://github.com/mattermost/mattermost-plugin-starter-template",
+    "support_url": "https://github.com/mattermost/mattermost-plugin-starter-template/issues",
+    "icon_path": "assets/starter-template-icon.svg",
+    "min_server_version": "6.2.1",
     "server": {
-        "executable": "plugin.exe"
+        "executables": {
+            "linux-amd64": "server/dist/plugin-linux-amd64",
+            "linux-arm64": "server/dist/plugin-linux-arm64",
+            "darwin-amd64": "server/dist/plugin-darwin-amd64",
+            "darwin-arm64": "server/dist/plugin-darwin-arm64",
+            "windows-amd64": "server/dist/plugin-windows-amd64.exe"
+        }
+    },
+    "settings_schema": {
+        "header": "Configure your demo plugin settings below.",
+        "footer": "",
+        "settings": [
+            {
+                "key": "ChannelID",
+                "display_name": "Channel ID:",
+                "type": "text",
+                "help_text": "The channel ID that the /slash command message will be sent to.",
+                "placeholder": "demo_plugin",
+                "default": "demo_plugin"
+            },
+            {
+                "key": "Username",
+                "display_name": "Username:",
+                "type": "text",
+                "help_text": "The user to use as part of the demo plugin, created automatically if it does not exist.",
+                "placeholder": "demo_plugin",
+                "default": "demo_plugin"
+            },
+            {
+                "key": "TagUsers",
+                "display_name": "Tag Users",
+                "type": "text",
+                "help_text": "Enter usernames seperated by commas."
+            }
+        ]
     }
 }
