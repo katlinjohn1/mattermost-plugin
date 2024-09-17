@@ -26,26 +26,23 @@ type configuration struct {
 	// The channel to use as part of the demo plugin, created for each team automatically if it does not exist.
 	ChannelName string
 
+	// The channel ID to use as part of the demo plugin
+	ChannelID string
+
 	// LastName is the last name of the demo user.
 	LastName string
 
 	// TextStyle controls the text style of the messages posted by the demo user.
 	TextStyle string
 
-	// RandomSecret is a generated key that, when mentioned in a message by a user, will trigger the demo user to post the 'SecretMessage'.
-	RandomSecret string
-
-	// SecretMessage is the message posted to the demo channel when the 'RandomSecret' is pasted somewhere in the team.
-	SecretMessage string
+	// TagUsers are the users that will be tagged in the message posted
+	TagUsers string
 
 	// EnableMentionUser controls whether the 'MentionUser' is prepended to all demo messages or not.
 	EnableMentionUser bool
 
 	// MentionUser is the user that is prepended to demo messages when enabled.
 	MentionUser string
-
-	// SecretNumber is an integer that, when mentioned in a message by a user, will trigger the demo user to post a message.
-	SecretNumber int
 
 	// A deplay in seconds that is applied to Slash Command responses, Post Actions responses and Interactive Dialog responses.
 	// It's useful for testing.
@@ -77,11 +74,12 @@ func (c *configuration) Clone() *configuration {
 		TextStyle:               c.TextStyle,
 		EnableMentionUser:       c.EnableMentionUser,
 		MentionUser:             c.MentionUser,
-		SecretNumber:            c.SecretNumber,
 		IntegrationRequestDelay: c.IntegrationRequestDelay,
 		disabled:                c.disabled,
 		demoUserID:              c.demoUserID,
 		demoChannelIDs:          demoChannelIDs,
+		ChannelID:               c.ChannelID,
+		TagUsers:                c.TagUsers,
 	}
 }
 
@@ -137,6 +135,12 @@ func (p *Plugin) diffConfiguration(newConfiguration *configuration) {
 	}
 	if newConfiguration.MentionUser != oldConfiguration.MentionUser {
 		configurationDiff["mention_user"] = newConfiguration.MentionUser
+	}
+	if newConfiguration.ChannelID != oldConfiguration.ChannelID {
+		configurationDiff["channel_id"] = newConfiguration.ChannelID
+	}
+	if newConfiguration.TagUsers != oldConfiguration.TagUsers {
+		configurationDiff["tag_users"] = newConfiguration.TagUsers
 	}
 
 	if len(configurationDiff) == 0 {
@@ -215,10 +219,10 @@ func (p *Plugin) OnConfigurationChange() error {
 
 	p.botID = botID
 
-	configuration.demoChannelIDs, err = p.ensureDemoChannels(configuration)
-	if err != nil {
-		return errors.Wrap(err, "failed to ensure demo channels")
-	}
+	// configuration.demoChannelIDs, err = p.ensureDemoChannels(configuration)
+	// if err != nil {
+	// 	return errors.Wrap(err, "failed to ensure demo channels")
+	// }
 
 	p.diffConfiguration(configuration)
 
@@ -357,40 +361,40 @@ func (p *Plugin) ensureDemoUser(configuration *configuration) (string, error) {
 	return user.Id, nil
 }
 
-func (p *Plugin) ensureDemoChannels(configuration *configuration) (map[string]string, error) {
-	teams, err := p.API.GetTeams()
-	if err != nil {
-		return nil, err
-	}
+// func (p *Plugin) ensureDemoChannels(configuration *configuration) (map[string]string, error) {
+// 	teams, err := p.API.GetTeams()
+// 	if err != nil {
+// 		return nil, err
+// 	}
 
-	demoChannelIDs := make(map[string]string)
-	for _, team := range teams {
-		// Check for the configured channel. Ignore any error, since it's hard to
-		// distinguish runtime errors from a channel simply not existing.
-		channel, _ := p.API.GetChannelByNameForTeamName(team.Name, configuration.ChannelName, false)
+// 	demoChannelIDs := make(map[string]string)
+// 	for _, team := range teams {
+// 		// Check for the configured channel. Ignore any error, since it's hard to
+// 		// distinguish runtime errors from a channel simply not existing.
+// 		channel, _ := p.API.GetChannelByNameForTeamName(team.Name, configuration.ChannelName, false)
 
-		// Ensure the configured channel exists.
-		if channel == nil {
-			channel, err = p.API.CreateChannel(&model.Channel{
-				TeamId:      team.Id,
-				Type:        model.ChannelTypeOpen,
-				DisplayName: "Demo Plugin",
-				Name:        configuration.ChannelName,
-				Header:      "The channel used by the demo plugin.",
-				Purpose:     "This channel was created by a plugin for testing.",
-			})
+// 		// Ensure the configured channel exists.
+// 		if channel == nil {
+// 			channel, err = p.API.CreateChannel(&model.Channel{
+// 				TeamId:      team.Id,
+// 				Type:        model.ChannelTypeOpen,
+// 				DisplayName: "Demo Plugin",
+// 				Name:        "du-tickets",
+// 				Header:      "The channel used by the demo plugin.",
+// 				Purpose:     "This channel was created by a plugin for testing.",
+// 			})
 
-			if err != nil {
-				return nil, err
-			}
-		}
+// 			if err != nil {
+// 				return nil, err
+// 			}
+// 		}
 
-		// Save the ids for later use.
-		demoChannelIDs[team.Id] = channel.Id
-	}
+// 		// Save the ids for later use.
+// 		demoChannelIDs[team.Id] = channel.Id
+// 	}
 
-	return demoChannelIDs, nil
-}
+// 	return demoChannelIDs, nil
+// }
 
 // setEnabled wraps setConfiguration to configure if the plugin is enabled.
 func (p *Plugin) setEnabled(enabled bool) {

@@ -3,8 +3,8 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -100,22 +100,42 @@ func (p *Plugin) handleDialog(w http.ResponseWriter, r *http.Request) {
 	// 	w.WriteHeader(http.StatusInternalServerError)
 	// 	return
 	// }
-	shortDescription := request.Submission["shortDescription"].(string)
+
+	priority := request.Submission["userImpact"].(string)
+	var color string
+
+	if priority == "high" {
+		color = "#FF0000"
+	} else if priority == "medium" {
+		color = "#FFA500"
+	} else {
+		color = "#000000"
+	}
+
+	fields := make([]*model.SlackAttachmentField, 0, len(request.Submission))
+	for k, v := range request.Submission {
+		if v != nil{
+			fields = append(fields,
+				&model.SlackAttachmentField{
+					Title: k,
+					Value: v,
+				},
+			)
+		}
+		
+	}
+
 
 	rootPost, appErr := p.API.CreatePost(&model.Post{
 		UserId:    p.botID,
-		ChannelId: request.ChannelId,
+		ChannelId: p.configuration.ChannelID,
 		Message:   fmt.Sprintf(msg, user.Username),
 		Type: "custom_demo_plugin",
 		Props: model.StringInterface{
 			"attachments": []*model.SlackAttachment{{
 				Fallback: "test",
-				Color: "#FF8000",
-				Pretext: "this is pretext",
-				AuthorName: user.Username,
-				Fields: []*model.SlackAttachmentField {
-					shortDescription,
-				},
+				Color: color,
+				Fields: fields,
 			}},
 		},
 	})
@@ -124,16 +144,41 @@ func (p *Plugin) handleDialog(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	msg = "cc: @%v"
+	if p.configuration.TagUsers == ""  {
+		msg = "Update the plugin configuration to tag users in the future."
+	} else {
+		tagusers := strings.Split(p.configuration.TagUsers, ",")
+
+		var builder strings.Builder
+
+		for _, value := range tagusers {
+			modifiedItem := "@" + value
+
+			// Append the modified item to the builder
+			builder.WriteString(modifiedItem)
+
+			// Optionally, add a separator between items (e.g., comma and space)
+			builder.WriteString(", ")
+		}
+
+		msg = "cc:" + builder.String()
+
+		if len(msg) > 0 {
+			msg = msg[:len(msg)-2]
+		}
+	}
+
+	
+
+	
 	if !request.Cancelled {
-		log.Print(request.Submission)
 
 		if _, appErr = p.API.CreatePost(&model.Post{
 			UserId:    p.botID,
-			ChannelId: request.ChannelId,
+			ChannelId: p.configuration.ChannelID,
 			RootId:    rootPost.Id,
 			//set user to incident responders group
-			Message:   fmt.Sprintf(msg, user.Username),
+			Message:   fmt.Sprint(msg),
 			Type:      "custom_demo_plugin",
 			
 		}); appErr != nil {

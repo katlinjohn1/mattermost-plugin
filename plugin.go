@@ -2,6 +2,9 @@ package main
 
 import (
 	"sync"
+	_ "embed" // Need to embed manifest file
+	// "encoding/json"
+	// "strings"
 
 	"github.com/gorilla/mux"
 
@@ -16,6 +19,10 @@ import (
 var (
 	manifest model.Manifest = root.Manifest
 )
+
+// func init() {
+// 	_ = json.NewDecoder(strings.NewReader(manifestString)).Decode(&manifest)
+// }
 
 type Plugin struct {
 	plugin.MattermostPlugin

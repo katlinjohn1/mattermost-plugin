@@ -3,9 +3,9 @@
 ## To build the plugin as of 8/27/24:
 
 ```
-go build -o plugin.exe plugin.go
+go build -o plugin.exe
 # or if you are on mac, run this instead
-GOOS=linux GOARCH=amd64 go build -o plugin.exe plugin.go
+GOOS=linux GOARCH=amd64 go build -o plugin.exe
 tar -czvf plugin.tar.gz plugin.exe plugin.json 
 ```
 
