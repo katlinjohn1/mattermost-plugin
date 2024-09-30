@@ -15,7 +15,7 @@ import (
 const (
 	commandTriggerCrash             = "crash"
 	commandTriggerHooks             = "demo_plugin"
-	commandTriggerDialog            = "dialog"
+	commandTriggerDialog            = "sre-request"
 
 	dialogStateSome                = "somestate"
 	dialogStateRelativeCallbackURL = "relativecallbackstate"
@@ -105,52 +105,52 @@ func getDialogWithSampleElements() model.Dialog {
 		IconURL:    "http://www.mattermost.org/wp-content/uploads/2016/04/icon.png",
 		Elements: []model.DialogElement{{
 			DisplayName: "Type of Request",
-			Name:        "reqType",
+			Name:        "1-Type of Request",
 			Type:        "select",
 			Placeholder: "Select an option...",
 			HelpText:    "Choose an option from the list.",
 			Options: []*model.PostActionOptions{{
 				Text:  "Bug",
-				Value: "bug",
+				Value: "Bug",
 			}, {
 				Text:  "Feature Request",
-				Value: "featReq",
+				Value: "Feature Request",
 			}},
 		}, {
 			DisplayName: "Short Description",
-			Name:        "shortDescription",
+			Name:        "2-Short Description",
 			Type:        "text",
 			Placeholder: "Enter a quick description of the issue that's occurring",
 		}, {
 			DisplayName: "Long Description",
-			Name:        "longDescription",
+			Name:        "3-Long Description",
 			Type:        "textarea",
 			Placeholder: "Please describe the issue including any error messages or code snippets",
 		}, {
 			DisplayName: "Impact to Users",
-			Name:        "userImpact",
+			Name:        "4-User Impact",
 			Type:        "select",
 			Placeholder: "Select an option...",
 			HelpText:    "Choose an option from the list.",
 			Options: []*model.PostActionOptions{{
 				Text:  "Low",
-				Value: "low",
+				Value: "Low",
 			}, {
 				Text:  "Medium",
-				Value: "medium",
+				Value: "Medium",
 			}, {
 				Text:  "High",
-				Value: "high",
+				Value: "High",
 			}},
 		}, {
-			DisplayName: "Link to failed Pipeline",
-			Name:        "pipeline",
+			DisplayName: "Link to Failed Pipeline",
+			Name:        "5-Link to Failed Pipeline",
 			Type:        "textarea",
 			Placeholder: "If this is happening in a pipeline, please include a link to the failed pipeline",
 			Optional: true,
 		}, {
 			DisplayName: "Steps to replicate the issue",
-			Name:        "replication",
+			Name:        "6-Steps to replicate",
 			Type:        "textarea",
 			Placeholder: "placeholder",
 			Optional: true,
@@ -226,8 +226,8 @@ func (p *Plugin) executeCommandDialog(args *model.CommandArgs) *model.CommandRes
 	case "":
 		dialogRequest = model.OpenDialogRequest{
 			TriggerId: args.TriggerId,
-			// URL:       fmt.Sprintf("%s/plugins/%s/dialog/submit-dialog", *serverConfig.ServiceSettings.SiteURL , manifest.Id),
-			URL:       fmt.Sprintf("%s/plugins/%s/dialog/submit-dialog", "http://127.0.0.1:8065", manifest.Id),
+			// URL:       fmt.Sprintf("%s/plugins/%s/sre-request/submit-request", *serverConfig.ServiceSettings.SiteURL , manifest.Id),
+			URL:       fmt.Sprintf("%s/plugins/%s/sre-request/submit-request", "http://127.0.0.1:8065", manifest.Id),
 			Dialog:    getDialogWithSampleElements(),
 		}
 		

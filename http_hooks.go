@@ -30,9 +30,9 @@ func (p *Plugin) ServeHTTP(c *plugin.Context, w http.ResponseWriter, r *http.Req
 func (p *Plugin) initializeAPI() {
 	router := mux.NewRouter()
 
-	dialogRouter := router.PathPrefix("/dialog").Subrouter()
+	dialogRouter := router.PathPrefix("/sre-request").Subrouter()
 	dialogRouter.Use(p.withDelay)
-	dialogRouter.HandleFunc("/submit-dialog", p.handleDialog)
+	dialogRouter.HandleFunc("/submit-request", p.handleDialog)
 	dialogRouter.HandleFunc("/error", p.handleDialogWithError)
 
 	p.router = router
@@ -101,23 +101,25 @@ func (p *Plugin) handleDialog(w http.ResponseWriter, r *http.Request) {
 	// 	return
 	// }
 
-	priority := request.Submission["userImpact"].(string)
+	priority := request.Submission["4-User Impact"].(string)
 	var color string
 
-	if priority == "high" {
+	if priority == "High" {
 		color = "#FF0000"
-	} else if priority == "medium" {
+	} else if priority == "Medium" {
 		color = "#FFA500"
-	} else {
+	} else if priority == "Low" {
 		color = "#000000"
 	}
 
 	fields := make([]*model.SlackAttachmentField, 0, len(request.Submission))
 	for k, v := range request.Submission {
 		if v != nil{
+			builder := strings.Split(k, "-")
+			k2 := builder[len(builder)-1]
 			fields = append(fields,
 				&model.SlackAttachmentField{
-					Title: k,
+					Title: k2,
 					Value: v,
 				},
 			)

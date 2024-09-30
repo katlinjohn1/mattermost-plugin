@@ -209,12 +209,12 @@ func (p *Plugin) OnConfigurationChange() error {
 	configuration.demoUserID = demoUserID
 
 	botID, ensureBotError := p.client.Bot.EnsureBot(&model.Bot{
-		Username:    "duplugin",
-		DisplayName: "DU Bot",
-		Description: "A bot account created by the demo plugin.",
+		Username:    "srebot",
+		DisplayName: "SRE Bot",
+		Description: "A bot account created by the plugin.",
 	}, pluginapi.ProfileImagePath(""))
 	if ensureBotError != nil {
-		return errors.Wrap(ensureBotError, "failed to ensure demo bot")
+		return errors.Wrap(ensureBotError, "failed to ensure sre bot")
 	}
 
 	p.botID = botID
@@ -360,41 +360,6 @@ func (p *Plugin) ensureDemoUser(configuration *configuration) (string, error) {
 
 	return user.Id, nil
 }
-
-// func (p *Plugin) ensureDemoChannels(configuration *configuration) (map[string]string, error) {
-// 	teams, err := p.API.GetTeams()
-// 	if err != nil {
-// 		return nil, err
-// 	}
-
-// 	demoChannelIDs := make(map[string]string)
-// 	for _, team := range teams {
-// 		// Check for the configured channel. Ignore any error, since it's hard to
-// 		// distinguish runtime errors from a channel simply not existing.
-// 		channel, _ := p.API.GetChannelByNameForTeamName(team.Name, configuration.ChannelName, false)
-
-// 		// Ensure the configured channel exists.
-// 		if channel == nil {
-// 			channel, err = p.API.CreateChannel(&model.Channel{
-// 				TeamId:      team.Id,
-// 				Type:        model.ChannelTypeOpen,
-// 				DisplayName: "Demo Plugin",
-// 				Name:        "du-tickets",
-// 				Header:      "The channel used by the demo plugin.",
-// 				Purpose:     "This channel was created by a plugin for testing.",
-// 			})
-
-// 			if err != nil {
-// 				return nil, err
-// 			}
-// 		}
-
-// 		// Save the ids for later use.
-// 		demoChannelIDs[team.Id] = channel.Id
-// 	}
-
-// 	return demoChannelIDs, nil
-// }
 
 // setEnabled wraps setConfiguration to configure if the plugin is enabled.
 func (p *Plugin) setEnabled(enabled bool) {
