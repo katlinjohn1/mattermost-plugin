@@ -13,9 +13,9 @@ import (
 )
 
 const (
-	commandTriggerCrash             = "crash"
-	commandTriggerHooks             = "demo_plugin"
-	commandTriggerDialog            = "sre-request"
+	commandTriggerCrash  = "crash"
+	commandTriggerHooks  = "demo_plugin"
+	commandTriggerDialog = "sre-request"
 
 	dialogStateSome                = "somestate"
 	dialogStateRelativeCallbackURL = "relativecallbackstate"
@@ -98,37 +98,24 @@ func (p *Plugin) ExecuteCommand(c *plugin.Context, args *model.CommandArgs) (*mo
 	}
 }
 
-func getDialogWithSampleElements() model.Dialog {
+func getDialog() model.Dialog {
 	return model.Dialog{
 		CallbackId: "somecallbackid",
-		Title:      "Support",
+		Title:      "Bug Fix Request",
 		IconURL:    "http://www.mattermost.org/wp-content/uploads/2016/04/icon.png",
 		Elements: []model.DialogElement{{
-			DisplayName: "Type of Request",
-			Name:        "1-Type of Request",
-			Type:        "select",
-			Placeholder: "Select an option...",
-			HelpText:    "Choose an option from the list.",
-			Options: []*model.PostActionOptions{{
-				Text:  "Bug",
-				Value: "Bug",
-			}, {
-				Text:  "Feature Request",
-				Value: "Feature Request",
-			}},
-		}, {
-			DisplayName: "Short Description",
-			Name:        "2-Short Description",
+			DisplayName: "Summary",
+			Name:        "1-Summary",
 			Type:        "text",
-			Placeholder: "Enter a quick description of the issue that's occurring",
+			Placeholder: "Enter a quick summary of the issue that's occurring",
 		}, {
-			DisplayName: "Long Description",
-			Name:        "3-Long Description",
+			DisplayName: "Description",
+			Name:        "2-Description",
 			Type:        "textarea",
 			Placeholder: "Please describe the issue including any error messages or code snippets",
 		}, {
-			DisplayName: "Impact to Users",
-			Name:        "4-User Impact",
+			DisplayName: "Priority",
+			Name:        "3-Priority",
 			Type:        "select",
 			Placeholder: "Select an option...",
 			HelpText:    "Choose an option from the list.",
@@ -144,16 +131,16 @@ func getDialogWithSampleElements() model.Dialog {
 			}},
 		}, {
 			DisplayName: "Link to Failed Pipeline",
-			Name:        "5-Link to Failed Pipeline",
+			Name:        "4-Link to Failed Pipeline",
 			Type:        "textarea",
 			Placeholder: "If this is happening in a pipeline, please include a link to the failed pipeline",
-			Optional: true,
+			Optional:    true,
 		}, {
 			DisplayName: "Steps to replicate the issue",
-			Name:        "6-Steps to replicate",
+			Name:        "5-Steps to replicate",
 			Type:        "textarea",
 			Placeholder: "placeholder",
-			Optional: true,
+			Optional:    true,
 		}},
 		SubmitLabel:    "Submit",
 		NotifyOnCancel: false,
@@ -227,10 +214,10 @@ func (p *Plugin) executeCommandDialog(args *model.CommandArgs) *model.CommandRes
 		dialogRequest = model.OpenDialogRequest{
 			TriggerId: args.TriggerId,
 			// URL:       fmt.Sprintf("%s/plugins/%s/sre-request/submit-request", *serverConfig.ServiceSettings.SiteURL , manifest.Id),
-			URL:       fmt.Sprintf("%s/plugins/%s/sre-request/submit-request", "http://127.0.0.1:8065", manifest.Id),
-			Dialog:    getDialogWithSampleElements(),
+			URL:    fmt.Sprintf("%s/plugins/%s/sre-request/submit-request", "http://127.0.0.1:8065", manifest.Id),
+			Dialog: getDialog(),
 		}
-		
+
 	default:
 		return &model.CommandResponse{
 			ResponseType: model.CommandResponseTypeEphemeral,

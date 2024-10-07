@@ -82,7 +82,7 @@ func (p *Plugin) handleDialog(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	
+
 	defer r.Body.Close()
 
 	user, appErr := p.API.GetUser(request.UserId)
@@ -101,7 +101,7 @@ func (p *Plugin) handleDialog(w http.ResponseWriter, r *http.Request) {
 	// 	return
 	// }
 
-	priority := request.Submission["4-User Impact"].(string)
+	priority := request.Submission["3-Priority"].(string)
 	var color string
 
 	if priority == "High" {
@@ -114,7 +114,7 @@ func (p *Plugin) handleDialog(w http.ResponseWriter, r *http.Request) {
 
 	fields := make([]*model.SlackAttachmentField, 0, len(request.Submission))
 	for k, v := range request.Submission {
-		if v != nil{
+		if v != nil {
 			builder := strings.Split(k, "-")
 			k2 := builder[len(builder)-1]
 			fields = append(fields,
@@ -124,20 +124,19 @@ func (p *Plugin) handleDialog(w http.ResponseWriter, r *http.Request) {
 				},
 			)
 		}
-		
-	}
 
+	}
 
 	rootPost, appErr := p.API.CreatePost(&model.Post{
 		UserId:    p.botID,
 		ChannelId: p.configuration.ChannelID,
 		Message:   fmt.Sprintf(msg, user.Username),
-		Type: "custom_demo_plugin",
+		Type:      "custom_demo_plugin",
 		Props: model.StringInterface{
 			"attachments": []*model.SlackAttachment{{
 				Fallback: "test",
-				Color: color,
-				Fields: fields,
+				Color:    color,
+				Fields:   fields,
 			}},
 		},
 	})
@@ -146,7 +145,7 @@ func (p *Plugin) handleDialog(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if p.configuration.TagUsers == ""  {
+	if p.configuration.TagUsers == "" {
 		msg = "Update the plugin configuration to tag users in the future."
 	} else {
 		tagusers := strings.Split(p.configuration.TagUsers, ",")
@@ -170,9 +169,6 @@ func (p *Plugin) handleDialog(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	
-
-	
 	if !request.Cancelled {
 
 		if _, appErr = p.API.CreatePost(&model.Post{
@@ -180,9 +176,8 @@ func (p *Plugin) handleDialog(w http.ResponseWriter, r *http.Request) {
 			ChannelId: p.configuration.ChannelID,
 			RootId:    rootPost.Id,
 			//set user to incident responders group
-			Message:   fmt.Sprint(msg),
-			Type:      "custom_demo_plugin",
-			
+			Message: fmt.Sprint(msg),
+			Type:    "custom_demo_plugin",
 		}); appErr != nil {
 			p.API.LogError("Failed to post handleDialog message", "err", appErr.Error())
 			return
@@ -190,7 +185,7 @@ func (p *Plugin) handleDialog(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusOK)
-	
+
 }
 
 func (p *Plugin) handleDialogWithError(w http.ResponseWriter, r *http.Request) {
